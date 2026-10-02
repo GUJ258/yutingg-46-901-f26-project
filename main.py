@@ -88,21 +88,21 @@ class OrderBook:
         # Deal with BUY first， 
         if order.direction == "BUY":
             while order.quantity > 0 and not self.asks.isEmpty():
-                best_bid = self.asks.peek()
+                best_ask = self.asks.peek()
                 # can deal with all/partial best ask
-                if best_bid.price <= order.price:
-                    best_bid = self.asks.pop()
-                    fill_quantity = min(order.quantity, best_bid.quantity)
-                    fill_price = best_bid.price
+                if best_ask.price <= order.price:
+                    best_ask = self.asks.pop()
+                    fill_quantity = min(order.quantity, best_ask.quantity)
+                    fill_price = best_ask.price
 
                     order.quantity -= fill_quantity
-                    best_bid.quantity -= fill_quantity
+                    best_ask.quantity -= fill_quantity
 
                     order.fills.append((fill_quantity, fill_price))
-                    best_bid.fills.append((fill_quantity, fill_price))
+                    best_ask.fills.append((fill_quantity, fill_price))
 
-                    if best_bid.quantity > 0:
-                        self.asks.push(best_bid)
+                    if best_ask.quantity > 0:
+                        self.asks.push(best_ask)
                 # cant do the best
                 else:
                     break
