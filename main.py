@@ -63,10 +63,11 @@ class OrderBook:
             bids: The BUY orders that have yet to be fulfilled
             asks: The SELL orders that have yet to be fulfilled
         """
-        pass
-    
+        self.bids = PQ(lambda order: (-order.price, order.time))
+        self.asks = PQ(lambda order: (order.price, order.time))
+
     def __repr__(self):
-        pass
+        return f"OrderBook(bids={self.bids}, asks={self.asks})"
 
     def processOrder(self, order):
         """
