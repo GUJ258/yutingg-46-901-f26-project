@@ -88,26 +88,49 @@ class OrderBook:
         # Deal with BUY first， 
         if order.direction == "BUY":
             while order.quantity > 0 and not self.asks.isEmpty():
-                best_ask = self.asks.peek()
+                best_bid = self.asks.peek()
                 # can deal with all/partial best ask
-                if best_ask.price <= order.price:
-                    best_ask = self.asks.pop()
-                    fill_quantity = min(order.quantity, best_ask.quantity)
-                    fill_price = best_ask.price
+                if best_bid.price <= order.price:
+                    best_bid = self.asks.pop()
+                    fill_quantity = min(order.quantity, best_bid.quantity)
+                    fill_price = best_bid.price
 
                     order.quantity -= fill_quantity
-                    best_ask.quantity -= fill_quantity
+                    best_bid.quantity -= fill_quantity
 
                     order.fills.append((fill_quantity, fill_price))
-                    best_ask.fills.append((fill_quantity, fill_price))
+                    best_bid.fills.append((fill_quantity, fill_price))
 
-                    if best_ask.quantity > 0:
-                        self.asks.push(best_ask)
+                    if best_bid.quantity > 0:
+                        self.asks.push(best_bid)
                 # cant do the best
                 else:
                     break
             if order.quantity > 0:
                 self.bids.push(order)
+
+        else:
+            while order.quantity > 0 and not self.bids.isEmpty():
+                best_bid = self.bids.peek()
+                # can deal with all/partial best bid
+                if best_bid.price >= order.price:
+                    best_bid = self.bids.pop()
+                    fill_quantity = min(order.quantity, best_bid.quantity)
+                    fill_price = best_bid.price
+
+                    order.quantity -= fill_quantity
+                    best_bid.quantity -= fill_quantity
+
+                    order.fills.append((fill_quantity, fill_price))
+                    best_bid.fills.append((fill_quantity, fill_price))
+
+                    if best_bid.quantity > 0:
+                        self.bids.push(best_bid)
+                # cant do the best
+                else:
+                    break
+            if order.quantity > 0:
+                self.asks.push(order)
 
 
 ################################################################################
@@ -125,84 +148,84 @@ def testOrderBooks():
     assert(book1.bids.peek() == buy1)
     assert(buy1.fills == [])
 
-    # # Test 2: test an orderbook with just one sell bid
-    # book2 = OrderBook()
-    # sell2 = Order("USD", "EUR", SELL, price = 120, quantity = 3, time = 2)
-    # book2.processOrder(sell2)
-    # assert(not book2.asks.isEmpty())
-    # assert(book2.bids.isEmpty())
-    # assert(book2.asks.peek() == sell2)
-    # assert(sell2.fills == [])
+    # Test 2: test an orderbook with just one sell bid
+    book2 = OrderBook()
+    sell2 = Order("USD", "EUR", SELL, price = 120, quantity = 3, time = 2)
+    book2.processOrder(sell2)
+    assert(not book2.asks.isEmpty())
+    assert(book2.bids.isEmpty())
+    assert(book2.asks.peek() == sell2)
+    assert(sell2.fills == [])
 
-    # # Test 3: check that you fulfill an order if you can
-    # buy2 = Order("USD", "EUR", BUY, price = 120, quantity = 3, time = 2)
-    # book2.processOrder(buy2)
-    # # there should be no additional orders remaining in the book
-    # # as all of them are fulfilled
-    # assert(book2.bids.isEmpty() and book2.asks.isEmpty())
-    # assert(buy2.quantity == 0 and sell2.quantity == 0)
+    # Test 3: check that you fulfill an order if you can
+    buy2 = Order("USD", "EUR", BUY, price = 120, quantity = 3, time = 2)
+    book2.processOrder(buy2)
+    # there should be no additional orders remaining in the book
+    # as all of them are fulfilled
+    assert(book2.bids.isEmpty() and book2.asks.isEmpty())
+    assert(buy2.quantity == 0 and sell2.quantity == 0)
 
-    # # Test 4: fill as much of an order as you can (adding a buy second)
-    # book4 = OrderBook()
-    # sell4 = Order("USD", "EUR", SELL, price = 90, quantity = 3, time = 1)
-    # book4.processOrder(sell4)
-    # buy4 = Order("USD", "EUR", BUY, price = 100, quantity = 5, time = 2)
-    # book4.processOrder(buy4)
-    # assert(buy4.quantity == 2)   # still wants 2 more
-    # assert(sell4.quantity == 0)  # completely filled
-    # assert(buy4.fills == [(3, 90)])
-    # assert(book4.bids.peek() == buy4)
-    # assert(book4.asks.isEmpty())
+    # Test 4: fill as much of an order as you can (adding a buy second)
+    book4 = OrderBook()
+    sell4 = Order("USD", "EUR", SELL, price = 90, quantity = 3, time = 1)
+    book4.processOrder(sell4)
+    buy4 = Order("USD", "EUR", BUY, price = 100, quantity = 5, time = 2)
+    book4.processOrder(buy4)
+    assert(buy4.quantity == 2)   # still wants 2 more
+    assert(sell4.quantity == 0)  # completely filled
+    assert(buy4.fills == [(3, 90)])
+    assert(book4.bids.peek() == buy4)
+    assert(book4.asks.isEmpty())
 
-    # # Test 5: fill as much of an order as you can (adding a sell second)
-    # book5 = OrderBook()
-    # buy5 = Order("USD", "EUR", BUY, price = 95, quantity = 4, time = 1)
-    # book5.processOrder(buy5)
-    # sell5 = Order("USD", "EUR", SELL, price = 90, quantity = 6, time = 2)
-    # book5.processOrder(sell5)
-    # assert(sell5.quantity == 2)   # 2 left unfilled
-    # assert(buy5.quantity == 0)    # completely filled
+    # Test 5: fill as much of an order as you can (adding a sell second)
+    book5 = OrderBook()
+    buy5 = Order("USD", "EUR", BUY, price = 95, quantity = 4, time = 1)
+    book5.processOrder(buy5)
+    sell5 = Order("USD", "EUR", SELL, price = 90, quantity = 6, time = 2)
+    book5.processOrder(sell5)
+    assert(sell5.quantity == 2)   # 2 left unfilled
+    assert(buy5.quantity == 0)    # completely filled
 
-    # assert(buy5.fills == [(4, 95)])
-    # assert(book5.asks.peek() == sell5)
+    assert(buy5.fills == [(4, 95)])
+    assert(book5.asks.peek() == sell5)
 
-    # # Test 6: the best price should win!
-    # book6 = OrderBook()
-    # buy6a = Order("USD", "EUR", BUY, price = 100, quantity = 1, time = 1)
-    # buy6b = Order("USD", "EUR", BUY, price = 110, quantity = 1, time = 2)
-    # book6.processOrder(buy6a)
-    # book6.processOrder(buy6b)
-    # sell6 = Order("USD", "EUR", SELL, price = 100, quantity = 1, time = 3)
-    # book6.processOrder(sell6)
-    # # the 110 bid should match first because it's higher and more advantageous
-    # assert(buy6b.quantity == 0)
-    # assert(sell6.quantity == 0)
-    # assert(buy6b.fills == [(1, 110)])
-    # assert(buy6a.quantity == 1)  # still waiting
-    # assert(book6.bids.peek() == buy6a)
+    # Test 6: the best price should win!
+    book6 = OrderBook()
+    buy6a = Order("USD", "EUR", BUY, price = 100, quantity = 1, time = 1)
+    buy6b = Order("USD", "EUR", BUY, price = 110, quantity = 1, time = 2)
+    book6.processOrder(buy6a)
+    book6.processOrder(buy6b)
+    sell6 = Order("USD", "EUR", SELL, price = 100, quantity = 1, time = 3)
+    book6.processOrder(sell6)
+    # the 110 bid should match first because it's higher and more advantageous
+    assert(buy6b.quantity == 0)
+    assert(sell6.quantity == 0)
+    assert(buy6b.fills == [(1, 110)])
+    assert(buy6a.quantity == 1)  # still waiting
+    assert(book6.bids.peek() == buy6a)
 
-    # # Test 7: the earlier order at same price wins
-    # book7 = OrderBook()
-    # buy7a = Order("USD", "EUR", BUY, price = 100, quantity = 1, time = 1)
-    # buy7b = Order("USD", "EUR", BUY, price = 100, quantity = 1, time = 2)
-    # book7.processOrder(buy7a)
-    # book7.processOrder(buy7b)
-    # sell7 = Order("USD", "EUR", SELL, price = 100, quantity = 1, time = 3)
-    # book7.processOrder(sell7)
-    # assert(buy7a.quantity == 0)
-    # assert(buy7b.quantity == 1)  # still waiting
-    # assert(sell7.quantity == 0)
-    # assert(buy7a.fills == [(1, 100)])
+    # Test 7: the earlier order at same price wins
+    book7 = OrderBook()
+    buy7a = Order("USD", "EUR", BUY, price = 100, quantity = 1, time = 1)
+    buy7b = Order("USD", "EUR", BUY, price = 100, quantity = 1, time = 2)
+    book7.processOrder(buy7a)
+    book7.processOrder(buy7b)
+    sell7 = Order("USD", "EUR", SELL, price = 100, quantity = 1, time = 3)
+    book7.processOrder(sell7)
+    assert(buy7a.quantity == 0)
+    assert(buy7b.quantity == 1)  # still waiting
+    assert(sell7.quantity == 0)
+    assert(buy7a.fills == [(1, 100)])
 
-    # # Test 8: you can fill an order with multiple other orders
-    # book8 = OrderBook()
-    # book8.processOrder(Order("USD", "EUR", SELL, price = 90, quantity = 2, time = 1))
-    # book8.processOrder(Order("USD", "EUR", SELL, price = 95, quantity = 3, time = 2))
-    # buy8 = Order("USD", "EUR", BUY, price = 100, quantity = 5, time = 3)
-    # book8.processOrder(buy8)
-    # assert(buy8.quantity == 0)
-    # assert(buy8.fills == [(2, 90), (3, 95)])
-    # assert(book8.asks.isEmpty())
+    # Test 8: you can fill an order with multiple other orders
+    book8 = OrderBook()
+    book8.processOrder(Order("USD", "EUR", SELL, price = 90, quantity = 2, time = 1))
+    book8.processOrder(Order("USD", "EUR", SELL, price = 95, quantity = 3, time = 2))
+    buy8 = Order("USD", "EUR", BUY, price = 100, quantity = 5, time = 3)
+    book8.processOrder(buy8)
+    assert(buy8.quantity == 0)
+    assert(buy8.fills == [(2, 90), (3, 95)])
+    assert(book8.asks.isEmpty())
 
 def main():
     testOrderBooks()
